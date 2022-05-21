@@ -1,4 +1,7 @@
+import pkgutil
+from platform import platform
 from tkinter import Widget
+from turtle import width
 import pygame
 from pygame.locals import *
 import sys
@@ -11,25 +14,27 @@ pygame.init()  # Begin pygame
 vec = pygame.math.Vector2
 HEIGHT = 540
 WIDTH = 960
-ACC = 0.3
+ACC = 0.6
 FRIC = -0.10
-FPS = 60
+FPS = 45
 FPS_CLOCK = pygame.time.Clock()
 COUNT = 0
 
 displaysurface = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Game")
 
+camPos = vec(0,0)
+
 class Background(pygame.sprite.Sprite):
     def __init__(self):
-            super().__init__()
-            self.bgimage = pygame.image.load("./res/background.png")
-            self.bgimage = pygame.transform.scale(self.bgimage, (WIDTH, HEIGHT))
-            self.bgY = 0
-            self.bgX = 0
+        super().__init__()
+        self.bgimage = pygame.image.load("./res/background.png")
+        self.bgimage = pygame.transform.scale(self.bgimage, (WIDTH, HEIGHT))
+        self.bgY = 0
+        self.bgX = 0
 
     def render(self):
-            displaysurface.blit(self.bgimage, (self.bgX, self.bgY))
+        displaysurface.blit(self.bgimage, (self.bgX, self.bgY))
  
  
 class Ground(pygame.sprite.Sprite):
@@ -40,15 +45,42 @@ class Ground(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center = (WIDTH/2, HEIGHT*3/4))
  
     def render(self):
-        displaysurface.blit(self.image, (self.rect.x, self.rect.y))  
+        displaysurface.blit(self.image, (self.rect.x - camPos.x, self.rect.y - camPos.y))
+        # displaysurface.blit(self.image, (self.rect.x, self.rect.y))
 
+
+class Platform(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.image.load("./res/platform.png")
+        self.image = pygame.transform.scale(self.image, (1650/16, 560/16))
+        self.rect = self.image.get_rect(center = (WIDTH/2, HEIGHT/4))
  
+    def render(self):
+        displaysurface.blit(self.image, (self.rect.x - camPos.x, self.rect.y - camPos.y))
+        # displaysurface.blit(self.image, (self.rect.x, self.rect.y))
+
+
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.image.load("./res/0001.png")
-        self.image = pygame.transform.scale(self.image, (WIDTH/6, WIDTH/6))
-        self.rect = self.image.get_rect()
+        self.image = pygame.image.load("./res/sprite/0000.png")
+        self.run_anim = [
+            pygame.image.load("./res/sprite/0000.png"), pygame.image.load("./res/sprite/0001.png"), pygame.image.load("./res/sprite/0002.png"),
+            pygame.image.load("./res/sprite/0003.png"), pygame.image.load("./res/sprite/0004.png"), pygame.image.load("./res/sprite/0005.png"),
+            pygame.image.load("./res/sprite/0006.png"), pygame.image.load("./res/sprite/0007.png"), pygame.image.load("./res/sprite/0008.png"),
+            pygame.image.load("./res/sprite/0009.png"), pygame.image.load("./res/sprite/0010.png"), pygame.image.load("./res/sprite/0011.png"),
+            pygame.image.load("./res/sprite/0012.png"), pygame.image.load("./res/sprite/0013.png"), pygame.image.load("./res/sprite/0014.png"),
+            pygame.image.load("./res/sprite/0015.png"), pygame.image.load("./res/sprite/0016.png"), pygame.image.load("./res/sprite/0017.png"),
+            pygame.image.load("./res/sprite/0018.png"), pygame.image.load("./res/sprite/0019.png"), pygame.image.load("./res/sprite/0020.png"),
+            pygame.image.load("./res/sprite/0021.png"), pygame.image.load("./res/sprite/0022.png"), pygame.image.load("./res/sprite/0023.png"),
+            pygame.image.load("./res/sprite/0024.png"), pygame.image.load("./res/sprite/0025.png"), pygame.image.load("./res/sprite/0026.png"),
+            pygame.image.load("./res/sprite/0027.png"), pygame.image.load("./res/sprite/0028.png"), pygame.image.load("./res/sprite/0029.png"),
+            pygame.image.load("./res/sprite/0030.png"), pygame.image.load("./res/sprite/0031.png"), pygame.image.load("./res/sprite/0032.png")
+        ]
+        self.rect = pygame.Rect(WIDTH/2, HEIGHT/2, self.image.get_width()/2, self.image.get_height())
  
         # Position and direction
         self.vx = 0
@@ -86,16 +118,12 @@ class Player(pygame.sprite.Sprite):
         self.acc.x += self.vel.x * FRIC
         self.vel += self.acc
         self.pos += self.vel + 0.5 * self.acc  # Updates Position with new values
-    
-        # This causes character warping from one point of the screen to the other
-        if self.pos.x > WIDTH:
-            self.pos.x = 0
-        if self.pos.x < 0:
-            self.pos.x = WIDTH
-        
-        self.rect.midbottom = self.pos  # Update rect with new pos 
+
+        # Update rect with new pos 
+        self.rect.midbottom = self.pos
+
     def gravity_check(self):
-        hits = pygame.sprite.spritecollide(player ,ground_group, False)
+        hits = pygame.sprite.spritecollide(player,collision_group, False)
         if self.vel.y > 0:
             if hits:
                 lowest = hits[0]
@@ -105,8 +133,27 @@ class Player(pygame.sprite.Sprite):
                     self.jumping = False
 
     def update(self):
-        pass
-    
+        # Return to base frame if at end of movement sequence 
+        if self.move_frame > 32:
+            self.move_frame = 1
+            return
+        # Move the character to the next frame if conditions are met 
+        if self.jumping == False and self.running == True:  
+            if self.vel.x > 0:
+                self.image = pygame.transform.flip(self.run_anim[self.move_frame], True, False)
+                self.direction = "RIGHT"
+            else:
+                self.image = self.run_anim[self.move_frame]
+                self.direction = "LEFT"
+            self.move_frame += 1
+            # Returns to base frame if standing still and incorrect frame is showing
+        if abs(self.vel.x) < 0.5 and self.move_frame != 0:
+            self.move_frame = 0
+            if self.direction == "RIGHT":
+                self.image = pygame.transform.flip(self.run_anim[self.move_frame], True, False)
+            elif self.direction == "LEFT":
+                self.image = self.run_anim[self.move_frame]
+
     def attack(self):
         pass
     
@@ -114,10 +161,10 @@ class Player(pygame.sprite.Sprite):
         self.rect.x += 1
     
         # Check to see if payer is in contact with the ground
-        hits = pygame.sprite.spritecollide(self, ground_group, False)
+        hits = pygame.sprite.spritecollide(self, collision_group, False)
         
         self.rect.x -= 1
-    
+
         # If touching the ground, and not currently jumping, cause the player to jump.
         if hits and not self.jumping:
             self.jumping = True
@@ -131,10 +178,12 @@ class Enemy(pygame.sprite.Sprite):
 background = Background()
 ground = Ground()
 player = Player()
+platform1 = Platform()
 
 ground = Ground()
-ground_group = pygame.sprite.Group()
-ground_group.add(ground)
+collision_group = pygame.sprite.Group()
+collision_group.add(ground)
+collision_group.add(platform1)
 
 while True:
     for event in pygame.event.get():
@@ -148,18 +197,24 @@ while True:
  
         # Event handling for a range of different key presses
         if event.type == pygame.KEYDOWN:
-           if event.key == pygame.K_SPACE:
-                  player.jump()
+            if event.key == pygame.K_SPACE:
+                player.jump()
 
     # update player
 
     player.gravity_check()
+    player.update()
     player.move()
+
+    camPos = player.pos - vec(WIDTH/2, HEIGHT/2)
 
     # Render Functions ------
     background.render()
     ground.render()
-    displaysurface.blit(player.image, player.rect)
+    pygame.draw.rect(displaysurface, (255,0,0), player.rect)
+    pygame.draw.rect(displaysurface, (255,0,0), platform1.rect)
+    platform1.render()
+    displaysurface.blit(player.image, (WIDTH/2 - player.image.get_width()/2, HEIGHT/2 - player.image.get_height()))
  
     pygame.display.update() 
     FPS_CLOCK.tick(FPS)
