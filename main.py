@@ -1,81 +1,99 @@
-import pygame as pygame
+from tkinter import Widget
+import pygame
+import sys
 import math
 import random
-pygame.init()
 
+pygame.init()  # Begin pygame
+ 
+# Declaring variables to be used through the program
+vec = pygame.math.Vector2
+HEIGHT = 540
+WIDTH = 960
+ACC = 0.3
+FRIC = -0.10
+FPS = 60
+FPS_CLOCK = pygame.time.Clock()
+COUNT = 0
 
+displaysurface = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Game")
 
-WINDOW_WIDTH, WINDOW_HEIGHT = (500, 300)
-#Initial Variables
-WINDOW = pygame.display.set_mode( (WINDOW_WIDTH, WINDOW_HEIGHT) )
+class Background(pygame.sprite.Sprite):
+    def __init__(self):
+            super().__init__()
+            self.bgimage = pygame.image.load("./res/background.png")
+            self.bgimage = pygame.transform.scale(self.bgimage, (WIDTH, HEIGHT))
+            self.bgY = 0
+            self.bgX = 0
 
-ball = pygame.Rect(WINDOW_WIDTH/2, WINDOW_HEIGHT/2, 10, 10)
+    def render(self):
+            displaysurface.blit(self.bgimage, (self.bgX, self.bgY))
+ 
+ 
+class Ground(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.image.load("./res/ground.png")
+        self.image = pygame.transform.scale(self.image, (WIDTH, HEIGHT/2))
+        self.rect = self.image.get_rect(center = (WIDTH/2, HEIGHT*3/4))
+ 
+    def render(self):
+        displaysurface.blit(self.image, (self.rect.x, self.rect.y))  
 
-player1 = pygame.Rect(20 - 3, WINDOW_HEIGHT/2 - 9, 6, 30)
-player2 = pygame.Rect(WINDOW_WIDTH - 20 - 3, WINDOW_HEIGHT/2 - 9, 6, 30)
-
-ballXVel = -1
-ballYVel = 1
-
-K_w, K_s, K_UP, K_DOWN = (0, 1, 2 , 3)
-keysdown = [False, False, False, False]
-
-def main():
-    running = True
-  
-    global ballXVel
-    global ballYVel
-  
-    clock = pygame.time.Clock()
-  
-    while running:
-        clock.tick(60)
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_w:
-                    keysdown[K_w] = True
-                if event.key == pygame.K_s:
-                    keysdown[K_s] = True
-                if event.key == pygame.K_UP:
-                    keysdown[K_UP] = True
-                if event.key == pygame.K_DOWN:
-                    keysdown[K_DOWN] = True
-        print(keysdown)
-
-        if ball.collidelist([player1, player2]) != -1:
-            ballXVel *= -1
-
-        if ball.y + 10 >= WINDOW_HEIGHT or ball.y <= 0:
-            ballYVel *= -1
-
-        if ball.x + 10 >= WINDOW_WIDTH or ball.x <= 0:
-            ballXVel *= -1
-        
-        ball.x += ballXVel
-        ball.y += ballYVel
-
-        if keysdown[K_w]:
-            player1.y -= 1
-        if keysdown[K_s]:
-            player1.y += 1
-        if keysdown[K_UP]:
-            player2.y -= 1
-        if keysdown[K_DOWN]:
-            player2.y += 1
+ 
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.image.load("./res/0001.png")
+        self.image = pygame.transform.scale(self.image, (WIDTH/6, WIDTH/6))
+        self.rect = self.image.get_rect()
+ 
+        # Position and direction
+        self.vx = 0
+        self.pos = vec((WIDTH/2, HEIGHT/2))
+        self.vel = vec(0,0) 
+        self.acc = vec(0,0)
+        self.direction = "RIGHT"
+    def move(self):
+        pass
+ 
+    def update(self):
+        pass
     
-        draw()
+    def attack(self):
+        pass
+    
+    def jump(self):
+        pass
+     
+ 
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
 
-    pygame.quit()
 
+background = Background()
+ground = Ground()
+player = Player()
+while True:
+    for event in pygame.event.get():
+        # Will run when the close window button is clicked    
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit() 
+        # For events that occur upon clicking the mouse (left click) 
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pass
+ 
+        # Event handling for a range of different key presses    
+        if event.type == pygame.KEYDOWN:
+            pass
 
-def draw():
-    WINDOW.fill( (255, 255, 255) )
-
-    pygame.draw.rect(WINDOW, (0, 0, 0), ball)
-    pygame.draw.rect(WINDOW, (0, 0, 0), player1)
-    pygame.draw.rect(WINDOW, (0, 0, 0), player2)
-
-    pygame.display.update()
-
-if __name__ == "__main__":
-    main()
+    # Render Functions ------
+    background.render()
+    ground.render()
+    displaysurface.blit(player.image, player.rect)
+ 
+    pygame.display.update() 
+    FPS_CLOCK.tick(FPS)
