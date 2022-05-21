@@ -1,3 +1,4 @@
+from multiprocessing.dummy import current_process
 import pkgutil
 from platform import platform
 from tkinter import Widget
@@ -41,8 +42,8 @@ class Ground(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.image = pygame.image.load("./res/ground.png")
-        self.image = pygame.transform.scale(self.image, (WIDTH, HEIGHT/2))
-        self.rect = self.image.get_rect(center = (WIDTH/2, HEIGHT*3/4))
+        self.image = pygame.transform.scale(self.image, (WIDTH*4, HEIGHT/2))
+        self.rect = self.image.get_rect(center = (WIDTH*2, HEIGHT*3/4))
  
     def render(self):
         displaysurface.blit(self.image, (self.rect.x - camPos.x, self.rect.y - camPos.y))
@@ -50,11 +51,11 @@ class Ground(pygame.sprite.Sprite):
 
 
 class Platform(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, position):
         super().__init__()
         self.image = pygame.image.load("./res/platform.png")
         self.image = pygame.transform.scale(self.image, (1650/16, 560/16))
-        self.rect = self.image.get_rect(center = (WIDTH/2, HEIGHT/4))
+        self.rect = self.image.get_rect(center = position)
  
     def render(self):
         displaysurface.blit(self.image, (self.rect.x - camPos.x, self.rect.y - camPos.y))
@@ -138,21 +139,24 @@ class Player(pygame.sprite.Sprite):
             self.move_frame = 1
             return
         # Move the character to the next frame if conditions are met 
-        if self.jumping == False and self.running == True:  
+        if self.running == True:  
             if self.vel.x > 0:
-                self.image = pygame.transform.flip(self.run_anim[self.move_frame], True, False)
+                self.image = pygame.transform.flip(self.run_anim[int(self.move_frame)], True, False)
                 self.direction = "RIGHT"
             else:
-                self.image = self.run_anim[self.move_frame]
+                self.image = self.run_anim[int(self.move_frame)]
                 self.direction = "LEFT"
-            self.move_frame += 1
+            if self.jumping == False:
+                self.move_frame += 1
+            else:
+                self.move_frame += 0.2
             # Returns to base frame if standing still and incorrect frame is showing
         if abs(self.vel.x) < 0.5 and self.move_frame != 0:
             self.move_frame = 0
             if self.direction == "RIGHT":
-                self.image = pygame.transform.flip(self.run_anim[self.move_frame], True, False)
+                self.image = pygame.transform.flip(self.run_anim[int(self.move_frame)], True, False)
             elif self.direction == "LEFT":
-                self.image = self.run_anim[self.move_frame]
+                self.image = self.run_anim[int(self.move_frame)]
 
     def attack(self):
         pass
@@ -178,12 +182,12 @@ class Enemy(pygame.sprite.Sprite):
 background = Background()
 ground = Ground()
 player = Player()
-platform1 = Platform()
+platforms = [Platform((WIDTH/2, HEIGHT/2 - 100))]
 
-ground = Ground()
 collision_group = pygame.sprite.Group()
 collision_group.add(ground)
-collision_group.add(platform1)
+for current_platform in platforms:
+    collision_group.add(current_platform)
 
 while True:
     for event in pygame.event.get():
@@ -211,9 +215,8 @@ while True:
     # Render Functions ------
     background.render()
     ground.render()
-    pygame.draw.rect(displaysurface, (255,0,0), player.rect)
-    pygame.draw.rect(displaysurface, (255,0,0), platform1.rect)
-    platform1.render()
+    for current_platform in platforms:
+        current_platform.render()
     displaysurface.blit(player.image, (WIDTH/2 - player.image.get_width()/2, HEIGHT/2 - player.image.get_height()))
  
     pygame.display.update() 
