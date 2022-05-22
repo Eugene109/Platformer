@@ -1,6 +1,7 @@
 from pickle import TRUE
 from platform import platform
 from tkinter import Widget
+from tkinter.tix import Tree
 from turtle import width
 from xml.etree.ElementTree import tostring
 import pygame
@@ -337,7 +338,7 @@ class Door(pygame.sprite.Sprite):
         displaysurface.blit(self.image, (self.rect.x - camPos.x, self.rect.y - camPos.y))
 
 
-background = Background("./res/background.png")
+background = Background("./res/orionNebula.jpg")
 midground = Background("./res/midground.png")
 midground.bgY = 20
 
@@ -347,7 +348,7 @@ platforms = [
     Platform((560, 170)), Platform((650, 40)), Platform((900, 30)),
     Platform((1050, 150)), Platform((1025, -150)), Platform((1200, 0)),
     Platform((1350, -75)), Platform((1460, -75))]
-obstacles = [Electricity((705, 20))]
+obstacles = [Electricity((705, 20)),Electricity((1050, 200))]
 batteries = [Battery((650, -40)), Battery((1050, 70)), Battery((1025, -230))]
 
 exitDoor = Door((1460, -150))
@@ -375,14 +376,96 @@ battery_group = pygame.sprite.Group()
 for current_battery in batteries:
     battery_group.add(current_battery)
 
+
+current_lvl = 1
+
+def next_lvl(lvl_num):
+    global ground
+    global player
+    global platforms
+    global obstacles
+    global batteries
+    global exitDoor
+    global door_collision
+    global battery_icon
+    global font
+    global text
+    global textRect
+    global collision_group
+    global obstacle_group
+    global battery_group
+    global playing
+    global levelOver
+    global current_lvl
+    score = player.num_batteries
+    current_lvl += 1
+    
+    ground = Ground()
+    player = Player()
+    player.num_batteries = score
+
+    if lvl_num == 1:
+
+        platforms = [
+            Platform((560, 170)), Platform((665, 170)), Platform((755, 100)), Platform((1005, 30)),
+            Platform((1155, 150)), Platform((1130, -150)), Platform((1305, 0)),
+            Platform((1455, -75)), Platform((1565, -75)), Platform((1665, -150)), Platform((1305, -290)), Platform((1100, -450)), Platform((900, -610)), Platform((700, -770))]
+        obstacles = [Electricity((810, 20)),Electricity((1155, 200)), Electricity((1330, -150)), Electricity((905, 60))]
+        batteries = [Battery((755, -40)), Battery((1155, 70)), Battery((1130, -230)), Battery((1100, -530)), Battery((700, -850))]
+
+        exitDoor = Door((1860, -225))
+        exitDoor.rect.center = (1665, -150 - exitDoor.image.get_height()/2)
+    if lvl_num == 2:
+        player.dead = True
+
+        platforms = [
+            Platform((560, 170)), Platform((650, 40)), Platform((900, 30)),
+            Platform((1050, 150)), Platform((1025, -150)), Platform((1200, 0)),
+            Platform((1350, -75)), Platform((1460, -75))]
+        obstacles = [Electricity((705, 20)),Electricity((1050, 200))]
+        batteries = [Battery((650, -40)), Battery((1050, 70)), Battery((1025, -230))]
+
+        exitDoor = Door((1460, -150))
+        exitDoor.rect.center = (1460, -75 - exitDoor.image.get_height()/2)
+
+
+    door_collision = pygame.sprite.Group()
+    door_collision.add(exitDoor)
+
+
+    battery_icon = Battery((32, 36))
+    font = pygame.font.Font('freesansbold.ttf', 32)
+    text = font.render('x'+str(player.num_batteries), True, (255,255,255))
+    textRect = text.get_rect()
+    textRect.center = (75,36)
+
+    collision_group = pygame.sprite.Group()
+    collision_group.add(ground)
+    for current_platform in platforms:
+        collision_group.add(current_platform)
+
+    obstacle_group = pygame.sprite.Group()
+    for current_obstacle in obstacles:
+        obstacle_group.add(current_obstacle)
+
+    battery_group = pygame.sprite.Group()
+    for current_battery in batteries:
+        battery_group.add(current_battery)
+    playing = True
+    levelOver = False
+
+NextLvl = font.render('Next Level', True, (255,255,255), (255,0,0))
+NextLvlRect = NextLvl.get_rect()
+NextLvlRect.center = (WIDTH/2, HEIGHT/1.5 + NextLvlRect.height)
+
 offset1 = -5;
 offset2 = -5;
 
 playing = True
 levelOver = False
 while playing:
-    platforms[2].rect.y += offset1
-    if platforms[2].rect.y < -50 or platforms[2].rect.y > 110:
+    platforms[2 + current_lvl -1].rect.y += offset1
+    if platforms[2 + current_lvl -1].rect.y < -90 or platforms[2 + current_lvl -1].rect.y > 110:
         offset1 *= -1
 
     # platforms[7].rect.x += offset2
@@ -393,10 +476,12 @@ while playing:
         # Will run when the close window button is clicked    
         if event.type == pygame.QUIT:
             pygame.quit()
-            sys.exit() 
+            sys.exit()
         # For events that occur upon clicking the mouse (left click) 
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            pass
+        if event.type == pygame.MOUSEBUTTONDOWN and levelOver:
+            mouse = pygame.mouse.get_pos()
+            if NextLvlRect.left <= mouse[0] <= NextLvlRect.right and NextLvlRect.top <= mouse[1] <= NextLvlRect.bottom:
+                next_lvl(current_lvl)
  
         # Event handling for a range of different key presses
         if event.type == pygame.KEYDOWN:
@@ -405,7 +490,7 @@ while playing:
 
     # update player
 
-    if player.dead != True:
+    if player.dead != True and levelOver != True:
         player.update()
         # player.dead_anim_update()
         player.move()
@@ -413,15 +498,13 @@ while playing:
         levelOver = player.door_check()
         player.battery_check()
         player.obst_check()
-    else:
+    elif player.dead:
         playing = player.dead_anim_update()
 
     camPos = player.pos - vec(WIDTH/2, HEIGHT/2)
 
     r = platforms[0].rect.left - player.rect.right # negative == collision
-    l = player.rect.left - platforms[0].rect.right 
-    print(r)
-    print(l)
+    l = player.rect.left - platforms[0].rect.right
 
 
     # Render Functions ------
@@ -447,9 +530,9 @@ while playing:
     displaysurface.blit(text, textRect)
 
     if levelOver:
-        levelOverText = font.render('You Won!', True, (255,255,255))
-        levelOverTextRect = text.get_rect()
-        levelOverTextRect.center = (WIDTH/2 - levelOverTextRect.width*2, HEIGHT/2 - levelOverTextRect.height*5)
+        levelOverText = font.render('You Won! Level '+ str(current_lvl), True, (255,255,255))
+        levelOverTextRect = levelOverText.get_rect()
+        levelOverTextRect.center = (WIDTH/2, HEIGHT/2 - levelOverTextRect.height*5)
 
         f = open("saveFile.txt", "r")
         highscore = int(f.read())
@@ -468,9 +551,6 @@ while playing:
         scoreTextRect = score.get_rect()
         scoreTextRect.center = (WIDTH/2, HEIGHT/3 + scoreTextRect.height)
 
-        NextLvl = font.render('Next Level', True, (255,255,255), (255,0,0))
-        NextLvlRect = score.get_rect()
-        NextLvlRect.center = (WIDTH/2 - 25, HEIGHT/1.5 + NextLvlRect.height)
 
         pygame.draw.rect(displaysurface, (150,150,150), pygame.Rect(WIDTH*9/32, HEIGHT/16, WIDTH*7/16, HEIGHT*14/16))
         displaysurface.blit(levelOverText, levelOverTextRect)
@@ -503,6 +583,10 @@ score = font.render('Score: ' + str(player.num_batteries), True, (255,255,255))
 scoreTextRect = score.get_rect()
 scoreTextRect.center = (WIDTH/2, HEIGHT/2 + scoreTextRect.height)
 
+continueText = font.render('Press any key to continue', True, (255,255,255))
+continueTextRect = continueText.get_rect()
+continueTextRect.center = (WIDTH/2, HEIGHT/2 + continueTextRect.height*3)
+
 while True:
     for event in pygame.event.get():
         # Will run when the close window button is clicked    
@@ -511,11 +595,13 @@ while True:
             sys.exit()
         if event.type == pygame.KEYDOWN:
             pygame.quit()
-            sys.exit() 
+            sys.exit()
+            print('bye!')
     pygame.draw.rect(displaysurface, (150,150,150), pygame.Rect(WIDTH*9/32, HEIGHT/16, WIDTH*7/16, HEIGHT*14/16))
     gameOver = font.render('Game Over!', True, (255,255,255))
     displaysurface.blit(gameOver, gameOverTextRect)
     displaysurface.blit(highscoreText, highscoreTextRect)
     displaysurface.blit(score, scoreTextRect)
+    displaysurface.blit(continueText, continueTextRect)
     pygame.display.update()
 
