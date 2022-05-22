@@ -27,10 +27,10 @@ pygame.display.set_caption("Game")
 camPos = vec(0,0)
 
 class Background(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, fName):
         super().__init__()
-        self.bgimage = pygame.image.load("./res/background.png")
-        self.bgimage = pygame.transform.scale(self.bgimage, (WIDTH, HEIGHT))
+        self.bgimage = pygame.image.load(fName)
+        self.bgimage = pygame.transform.scale(self.bgimage, (self.bgimage.get_width()/2, self.bgimage.get_height()/2))
         self.bgY = 0
         self.bgX = 0
 
@@ -109,12 +109,35 @@ class Player(pygame.sprite.Sprite):
     
         # Accelerates the player in the direction of the key press
         if pressed_keys[K_LEFT]:
-                self.acc.x = -ACC
-                self.direction = "LEFT"
+            self.acc.x = -ACC
+            self.direction = "LEFT"
         if pressed_keys[K_RIGHT]:
-                self.acc.x = ACC 
-                self.direction = "RIGHT"
+            self.acc.x = ACC 
+            self.direction = "RIGHT"
+
+        self.rect.y -= 1
+        hits = pygame.sprite.spritecollide(player, collision_group, False)
+        if hits:
+            closest = hits[0]
+            width = closest.rect.right - closest.rect.left
+            r = closest.rect.left - self.rect.right # negative == collision
+            l = self.rect.left - closest.rect.right # negative == collision
+            # print(r)
+            # print(l)
+            if abs(r) < width and r < 0:
+                if self.acc.x > 0:
+                    self.acc.x = 0
+                if self.vel.x > 0:
+                    self.vel.x = 0
+            if abs(l) < width and l < 0:
+                if self.acc.x < 0:
+                    self.acc.x = 0
+                if self.vel.x < 0:
+                    self.vel.x = 0
     
+        self.rect.y += 1
+
+
         # Formulas to calculate velocity while accounting for friction
         self.acc.x += self.vel.x * FRIC
         self.vel += self.acc
@@ -124,7 +147,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.midbottom = self.pos
 
     def gravity_check(self):
-        hits = pygame.sprite.spritecollide(player,collision_group, False)
+        hits = pygame.sprite.spritecollide(player, collision_group, False)
         if self.vel.y > 0:
             if hits:
                 lowest = hits[0]
@@ -179,10 +202,13 @@ class Enemy(pygame.sprite.Sprite):
         super().__init__()
 
 
-background = Background()
+background = Background("./res/background.png")
+midground = Background("./res/midground.png")
+midground.bgY = 100
+
 ground = Ground()
 player = Player()
-platforms = [Platform((WIDTH/2, HEIGHT/2 - 100))]
+platforms = [Platform((560, 170)), Platform((650, 40))]
 
 collision_group = pygame.sprite.Group()
 collision_group.add(ground)
@@ -212,8 +238,17 @@ while True:
 
     camPos = player.pos - vec(WIDTH/2, HEIGHT/2)
 
+    r = platforms[0].rect.left - player.rect.right # negative == collision
+    l = player.rect.left - platforms[0].rect.right 
+    print(r)
+    print(l)
+
+
     # Render Functions ------
     background.render()
+    midground.render()
+    # midground.bgX -= camPos.x/3
+    # midground.bgY -= camPos.y/3
     ground.render()
     for current_platform in platforms:
         current_platform.render()
