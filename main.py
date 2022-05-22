@@ -358,7 +358,7 @@ door_collision.add(exitDoor)
 
 
 battery_icon = Battery((32, 36))
-font = pygame.font.Font('freesansbold.ttf', 32)
+font = pygame.font.Font('./res/OdibeeSans-Regular.ttf', 32)
 text = font.render('x'+str(player.num_batteries), True, (255,255,255))
 textRect = text.get_rect()
 textRect.center = (75,36)
@@ -397,14 +397,16 @@ def next_lvl(lvl_num):
     global playing
     global levelOver
     global current_lvl
+    global background
     score = player.num_batteries
-    current_lvl += 1
+    current_lvl = lvl_num +1
     
     ground = Ground()
     player = Player()
     player.num_batteries = score
 
-    if lvl_num == 1:
+    if current_lvl == 2:
+        background = Background("./res/Wyoming-starry-sky.png")
 
         platforms = [
             Platform((560, 170)), Platform((665, 170)), Platform((755, 100)), Platform((1005, 30)),
@@ -415,18 +417,18 @@ def next_lvl(lvl_num):
 
         exitDoor = Door((1860, -225))
         exitDoor.rect.center = (1665, -150 - exitDoor.image.get_height()/2)
-    if lvl_num == 2:
-        player.dead = True
+    if current_lvl == 3:
+        background = Background("./res/maxresdefault.jpg")
 
         platforms = [
-            Platform((560, 170)), Platform((650, 40)), Platform((900, 30)),
-            Platform((1050, 150)), Platform((1025, -150)), Platform((1200, 0)),
-            Platform((1350, -75)), Platform((1460, -75))]
-        obstacles = [Electricity((705, 20)),Electricity((1050, 200))]
-        batteries = [Battery((650, -40)), Battery((1050, 70)), Battery((1025, -230))]
+            Platform((560, 170)), Platform((665, 30)), Platform((770, -30)), Platform((875, -30)), Platform((1110, 30)),
+            Platform((1260, 150)), Platform((1235, -150)), Platform((1410, 0)),
+            Platform((1665, -75)), Platform((1775, -75)), Platform((1875, -150)), Platform((1515, -290)), Platform((1310, -450)), Platform((1415, -610)), Platform((1520, -770))]
+        obstacles = [Electricity((915, 20)),Electricity((1260, 200)), Electricity((1435, -150)), Electricity((1010, 60))]
+        batteries = [Battery((860, -110)), Battery((1260, 70)), Battery((1235, -230)), Battery((1205, -530)), Battery((805, -850))]
 
-        exitDoor = Door((1460, -150))
-        exitDoor.rect.center = (1460, -75 - exitDoor.image.get_height()/2)
+        exitDoor = Door((1965, -225))
+        exitDoor.rect.center = (1770, -150 - exitDoor.image.get_height()/2)
 
 
     door_collision = pygame.sprite.Group()
@@ -434,7 +436,6 @@ def next_lvl(lvl_num):
 
 
     battery_icon = Battery((32, 36))
-    font = pygame.font.Font('freesansbold.ttf', 32)
     text = font.render('x'+str(player.num_batteries), True, (255,255,255))
     textRect = text.get_rect()
     textRect.center = (75,36)
@@ -481,7 +482,7 @@ while playing:
         if event.type == pygame.MOUSEBUTTONDOWN and levelOver:
             mouse = pygame.mouse.get_pos()
             if NextLvlRect.left <= mouse[0] <= NextLvlRect.right and NextLvlRect.top <= mouse[1] <= NextLvlRect.bottom:
-                next_lvl(current_lvl)
+                next_lvl(current_lvl) #**********************************************************************************************************************
  
         # Event handling for a range of different key presses
         if event.type == pygame.KEYDOWN:
@@ -529,7 +530,7 @@ while playing:
     displaysurface.blit(battery_icon.image, battery_icon.rect)
     displaysurface.blit(text, textRect)
 
-    if levelOver:
+    if levelOver and current_lvl < 3:
         levelOverText = font.render('You Won! Level '+ str(current_lvl), True, (255,255,255))
         levelOverTextRect = levelOverText.get_rect()
         levelOverTextRect.center = (WIDTH/2, HEIGHT/2 - levelOverTextRect.height*5)
@@ -557,6 +558,35 @@ while playing:
         displaysurface.blit(highscoreText, highscoreTextRect)
         displaysurface.blit(NextLvl, NextLvlRect)
         displaysurface.blit(score, scoreTextRect)
+    elif current_lvl == 4:
+        levelOverText = font.render('You Won!', True, (255,255,255))
+        levelOverTextRect = levelOverText.get_rect()
+        levelOverTextRect.center = (WIDTH/2, HEIGHT/2 - levelOverTextRect.height*5)
+
+        f = open("saveFile.txt", "r")
+        highscore = int(f.read())
+        f.close()
+
+        if player.num_batteries > highscore:
+            f = open("saveFile.txt", "w")
+            f.write(str(player.num_batteries))
+            f.close()
+
+        highscoreText = font.render('High Score: ' + str(highscore), True, (255,255,255))
+        highscoreTextRect = highscoreText.get_rect()
+        highscoreTextRect.center = (WIDTH/2, HEIGHT/3 + highscoreTextRect.height*2)
+
+        score = font.render('Score: ' + str(player.num_batteries), True, (255,255,255))
+        scoreTextRect = score.get_rect()
+        scoreTextRect.center = (WIDTH/2, HEIGHT/3 + scoreTextRect.height)
+
+
+        pygame.draw.rect(displaysurface, (150,150,150), pygame.Rect(WIDTH*9/32, HEIGHT/16, WIDTH*7/16, HEIGHT*14/16))
+        displaysurface.blit(levelOverText, levelOverTextRect)
+        displaysurface.blit(highscoreText, highscoreTextRect)
+        displaysurface.blit(NextLvl, NextLvlRect)
+        displaysurface.blit(score, scoreTextRect)
+        
 
     pygame.display.update() 
     FPS_CLOCK.tick(FPS)
